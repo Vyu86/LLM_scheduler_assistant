@@ -88,46 +88,21 @@ class TimedDecision:
 
 SYSTEM_PROMPT = """\
 You are a Kubernetes scheduling policy advisor.
-Given a cluster snapshot, pick the best policy: FIFO, PRIORITY, BIN_PACKING, or SPREAD.
+Given a cluster snapshot, pick the best policy.
+
+Available policies:
+- FIFO: Schedule workloads in the order they arrive. Best when low queue, no urgency
+- PRIORITY: Schedule based on workload importance. Best when latency-sensitive or deadlines, high queue
+- BIN_PACKING: Pack workloads onto as few nodes as possible. Best for resource efficiency under moderate load.
+- SPREAD: Distribute workloads evenly across nodes. Best for high availability and balanced load.
 
 Reply with ONLY the policy name. No prose, no JSON, no markdown.
 """
 
 FEW_SHOT_EXAMPLES = [
-
-    # --- 1. IDLE LATENCY → FIFO ---
-    {
-        "snapshot": """{"workload": {"workload_type": "latency_sensitive", "avg_cpu_request": 1.0, "avg_memory_request_gb": 2.0, "has_deadline": true}, "nodes": [{"cpu_utilization": 0.01, "memory_utilization": 0.01}, {"cpu_utilization": 0.02, "memory_utilization": 0.02}]}""",
-        "decision": "FIFO"
-    },
-
-    # --- 2. LATENCY + CONTENTION → SPREAD ---
-    {
-        "snapshot": """{"workload": {"workload_type": "latency_sensitive", "avg_cpu_request": 0.5, "avg_memory_request_gb": 1.0, "has_deadline": true}, "nodes": [{"cpu_utilization": 0.85, "memory_utilization": 0.80}, {"cpu_utilization": 0.90, "memory_utilization": 0.85}]}""",
-        "decision": "SPREAD"
-    },
-
-    # --- 3. LATENCY + URGENT DEADLINE → PRIORITY ---
-    {
-        "snapshot": """{"workload": {"workload_type": "latency_sensitive", "avg_cpu_request": 0.7, "avg_memory_request_gb": 1.5, "has_deadline": true, "deadline_seconds": 60.0}, "nodes": [{"cpu_utilization": 0.60, "memory_utilization": 0.55}, {"cpu_utilization": 0.65, "memory_utilization": 0.60}]}""",
-        "decision": "PRIORITY"
-    },
-
-    # --- 4. COMPUTE HEAVY + HIGH LOAD → BIN_PACKING ---
-    {
-        "snapshot": """{"workload": {"workload_type": "compute_heavy", "avg_cpu_request": 2.0, "avg_memory_request_gb": 4.0, "has_deadline": false}, "nodes": [{"cpu_utilization": 0.45, "memory_utilization": 0.50}, {"cpu_utilization": 0.50, "memory_utilization": 0.55}]}""",
-        "decision": "BIN_PACKING"
-    },
-
-    # --- 5. LOW LOAD COMPUTE → FIFO ---
-    {
-        "snapshot": """{"workload": {"workload_type": "compute_heavy", "avg_cpu_request": 1.0, "avg_memory_request_gb": 2.0, "has_deadline": false}, "nodes": [{"cpu_utilization": 0.20, "memory_utilization": 0.25}, {"cpu_utilization": 0.25, "memory_utilization": 0.30}]}""",
-        "decision": "FIFO"
-    },
-
 ]
 
-def _build_messages(snapshot: ClusterSnapshot, n_examples: int = 5) -> list[dict]:
+def _build_messages(snapshot: ClusterSnapshot, n_examples: int = 0) -> list[dict]:
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for ex in FEW_SHOT_EXAMPLES[:n_examples]:
         messages.append({"role": "user", "content": f"Cluster snapshot:\n{ex['snapshot']}"})
@@ -168,7 +143,7 @@ def load_model(model_path: str | Path, **kwargs):
         verbose=kwargs.get("verbose", False)
     )
 
-def query_llm(snapshot: ClusterSnapshot, llm, n_examples: int = 5) -> TimedDecision:
+def query_llm(snapshot: ClusterSnapshot, llm, n_examples: int = 0) -> TimedDecision:
     messages = _build_messages(snapshot, n_examples=n_examples)
 
     t0 = time.perf_counter()
