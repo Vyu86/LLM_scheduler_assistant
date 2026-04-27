@@ -268,7 +268,7 @@ class PolicyState:
         self.change_count += 1
 
 def run_loop(sleep_interval: int):
-    MODEL_PATH = "./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    MODEL_PATH = "./models/gemma-4-E2B-it-Q4_K_M.gguf"
     if not os.path.exists(MODEL_PATH):
         print(f"[!] Model missing at {MODEL_PATH}")
         return

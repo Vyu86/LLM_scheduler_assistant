@@ -46,6 +46,11 @@ def mutate():
     # 2. Translate the overrides into a JSON Patch
     if "priorityClassName" in overrides:
         patch.append({
+        "op": "remove",
+        "path": "/spec/priority"
+        })
+
+        patch.append({
             "op": "add",
             "path": "/spec/priorityClassName",
             "value": overrides["priorityClassName"]
