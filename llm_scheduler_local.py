@@ -169,7 +169,7 @@ def load_model(model_path: str | Path, **kwargs):
     )
 
 def query_llm(snapshot: ClusterSnapshot, llm, n_examples: int = 5) -> TimedDecision:
-    messages = _build_messages(snapshot, n_examples=n_examples)
+    messages = _build_messages(snapshot, n_examples=0)
 
     t0 = time.perf_counter()
     response = llm.create_chat_completion(
@@ -208,7 +208,7 @@ if __name__ == "__main__":
         recent_p99_latency_ms=250.0
     )
 
-    MODEL_PATH = "./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    MODEL_PATH = "./models/gemma-4-E2B-it-Q4_K_M.gguf"
 
     if not Path(MODEL_PATH).exists():
         print(f"Error: Model not found at {MODEL_PATH}")
